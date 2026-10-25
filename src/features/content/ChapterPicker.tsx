@@ -1,0 +1,9 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Check, ChevronDown } from 'lucide-react';
+import type { Chapter } from '@/lib/domain';
+
+export function ChapterPicker({ chapters, selectedId, onChange }: { chapters: Chapter[]; selectedId: string; onChange: (id: string) => void }) {
+  const index = chapters.findIndex((chapter) => chapter.id === selectedId);
+  const selected = chapters[index];
+  return <div className="w-full max-w-[320px]"><p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">Chapter</p><DropdownMenu.Root><DropdownMenu.Trigger asChild><button aria-label="Choose a chapter" className="flex h-10 w-full items-center justify-between gap-3 rounded-lg border border-line bg-white px-3 text-left text-sm text-ink outline-none hover:bg-[#F7F8F8] focus-visible:ring-2 focus-visible:ring-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><span className="truncate">{selected ? `${index + 1}. ${selected.title}` : 'Choose a chapter'}</span><ChevronDown aria-hidden="true" className="size-4 shrink-0 text-slate-600 dark:text-slate-300" /></button></DropdownMenu.Trigger><DropdownMenu.Portal><DropdownMenu.Content align="start" sideOffset={6} className="z-40 max-h-80 w-[min(320px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900"><DropdownMenu.RadioGroup value={selectedId} onValueChange={onChange}>{chapters.map((chapter, order) => <DropdownMenu.RadioItem key={chapter.id} value={chapter.id} className="relative cursor-pointer rounded-lg py-2 pl-8 pr-3 text-sm outline-none focus:bg-[#F7F8F8] dark:focus:bg-slate-800"><DropdownMenu.ItemIndicator className="absolute left-2 top-2.5"><Check className="size-4" aria-hidden="true" /></DropdownMenu.ItemIndicator>{order + 1}. {chapter.title}</DropdownMenu.RadioItem>)}</DropdownMenu.RadioGroup></DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root></div>;
+}
