@@ -201,6 +201,24 @@ async function readBody<T extends z.ZodType>(request: Request, schema: T) {
   return parsed.success ? parsed.data : null;
 }
 
+async function readMethodBody(request: Request): Promise<z.infer<typeof methodInput> | null>;
+async function readMethodBody(request: Request, partial: true): Promise<Partial<z.infer<typeof methodInput>> | null>;
+async function readMethodBody(request: Request, partial = false) {
+  let value: Record<string, unknown>;
+  if (request.headers.get('content-type')?.includes('multipart/form-data')) {
+    const form = await request.formData();
+    value = Object.fromEntries([...form.entries()].filter(([key]) => key !== 'file'));
+    const file = form.get('file');
+    if (file instanceof File) value.qrImageUrl = URL.createObjectURL(file);
+    if (typeof value.isActive === 'string') value.isActive = value.isActive === 'true';
+    for (const key of ['accountName', 'accountNo']) if (value[key] === '') value[key] = null;
+    if (!partial) for (const key of ['accountName', 'accountNo', 'qrImageUrl']) if (!(key in value)) value[key] = null;
+    if (!partial && value.isActive === undefined) value.isActive = true;
+  } else value = await request.json() as Record<string, unknown>;
+  const parsed = (partial ? methodInput.partial() : methodInput).safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 export const handlers = [
   http.get(`${API_URL}/me`, ({ request }) => {
     const token = request.headers.get('authorization') ?? '';
@@ -493,7 +511,7 @@ export const handlers = [
   http.get(`${API_URL}/admin/payment-methods`, ({ request }) => isPageAdmin(request) ? forbidden() : page(methods, request)),
   http.post(`${API_URL}/admin/payment-methods`, async ({ request }) => {
     if (isPageAdmin(request)) return forbidden();
-    const body = await readBody(request, methodInput);
+    const body = await readMethodBody(request);
     if (!body) return badRequest('Payment method details are invalid');
     const method: PaymentMethod = { ...body, id: crypto.randomUUID() };
     methods = [method, ...methods];
@@ -510,7 +528,7 @@ export const handlers = [
     if (isPageAdmin(request)) return forbidden();
     const method = methods.find((item) => item.id === params.id);
     if (!method) return notFound();
-    const body = await readBody(request, methodInput.partial());
+    const body = await readMethodBody(request, true);
     if (!body) return badRequest('Payment method details are invalid');
     Object.assign(method, body);
     return HttpResponse.json(method);

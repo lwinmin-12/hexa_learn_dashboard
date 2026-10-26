@@ -21,7 +21,7 @@ export function usePaymentMethods() {
 
 export function useSavePaymentMethod() {
   const client = useQueryClient();
-  return useMutation({ mutationFn: (input: { id: string | null; values: Parameters<typeof savePaymentMethod>[1] }) => savePaymentMethod(input.id, input.values), onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.paymentMethods }) });
+  return useMutation({ mutationFn: (input: { id: string | null; values: Parameters<typeof savePaymentMethod>[1]; qrImage?: File | null }) => savePaymentMethod(input.id, input.values, input.qrImage), onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.paymentMethods }) });
 }
 
 export function useDeletePaymentMethod() {

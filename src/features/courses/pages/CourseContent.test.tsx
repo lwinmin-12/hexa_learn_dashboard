@@ -84,6 +84,27 @@ describe('course content', () => {
     expect(screen.getByText('1 chapter, 2 episodes')).toBeInTheDocument();
   });
 
+  it('changes a chapter status through its actions menu', async () => {
+    const { user } = await openContent();
+    const chapter = screen.getAllByTestId('chapter-card')[1];
+    expect(within(chapter).getByText('draft')).toBeInTheDocument();
+    await user.click(within(chapter).getByRole('button', { name: 'Chapter actions for First conversations' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Set status to Published' }));
+    await waitFor(() => expect(within(chapter).getByText('published')).toBeInTheDocument());
+    expect(await screen.findByText('Chapter status updated.')).toBeInTheDocument();
+  });
+
+  it('keeps the current chapter status when the status update fails', async () => {
+    const chapterId = '75c861e5-45da-4d30-8682-49c533b1bd5e';
+    server.use(http.patch(`${API_URL}/admin/chapters/${chapterId}`, () => new HttpResponse(null, { status: 500 })));
+    const { user } = await openContent();
+    const chapter = screen.getAllByTestId('chapter-card')[1];
+    await user.click(within(chapter).getByRole('button', { name: 'Chapter actions for First conversations' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Set status to Published' }));
+    expect(await screen.findByText('Could not update chapter status. Please try again.')).toBeInTheDocument();
+    expect(within(chapter).getByText('draft')).toBeInTheDocument();
+  });
+
   it('creates a chapter from the header dialog with Enter and expands it', async () => {
     const { user } = await openContent();
     expect(screen.queryByPlaceholderText('Add a chapter title')).not.toBeInTheDocument();

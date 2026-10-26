@@ -26,10 +26,12 @@ export async function getPaymentMethods(page = 1, limit = 20) {
   return data;
 }
 
-export async function savePaymentMethod(id: string | null, input: Omit<PaymentMethod, 'id'>) {
-  const { type, name, accountName, accountNo, qrImageUrl, isActive } = input;
-  const payload = { type, name, accountName, accountNo, qrImageUrl, isActive };
-  const { data } = id ? await api.patch<PaymentMethod>(`/admin/payment-methods/${id}`, payload) : await api.post<PaymentMethod>('/admin/payment-methods', payload);
+export async function savePaymentMethod(id: string | null, input: Omit<PaymentMethod, 'id'>, qrImage?: File | null) {
+  const { type, name, accountName, accountNo, isActive } = input;
+  const payload = { type, name, accountName, accountNo, ...(type === 'bank_transfer' ? { qrImageUrl: null } : {}), isActive };
+  const upload = type === 'qr' ? qrImage : null;
+  const body = upload ? (() => { const form = new FormData(); Object.entries(payload).forEach(([key, value]) => { if (value !== undefined) form.append(key, value === null ? '' : String(value)); }); form.append('file', upload); return form; })() : payload;
+  const { data } = id ? await api.patch<PaymentMethod>(`/admin/payment-methods/${id}`, body) : await api.post<PaymentMethod>('/admin/payment-methods', body);
   return data;
 }
 
